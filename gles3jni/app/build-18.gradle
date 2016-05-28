@@ -16,7 +16,8 @@ model {
         cppFlags   += "-Werror"
         cppFlags   += "-fno-rtti"
         cppFlags   += "-fno-exceptions"
-        CFlags     += ["-Werror"]
+        cppFlags   += "-std=gnu++11"
+        CFlags     += ["-Werror", "-Ikazmath/include/kazmath/"]
         ldLibs     += ["log","GLESv3", "EGL"]
         stl         = "stlport_static"
     }
