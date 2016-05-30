@@ -20,7 +20,7 @@ model {
         cppFlags   += "-std=gnu++11"
         CFlags     += ["-Werror", "-DDYNAMIC_ES3"]
         CFlags     += "-I" + file("src/main/jni/kazmath/include/kazmath").absolutePath
-        ldLibs     += ["log","GLESv2", "EGL"]
+        ldLibs     += ["log","GLESv2", "EGL", "pthread"]
         stl         = "stlport_static"
     }
     android.buildTypes {

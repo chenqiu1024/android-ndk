@@ -12,7 +12,7 @@
 #include "gles2.h"
 
 #include "AutoRef.h"
-#include "kazmath/include/kazmath/kazmath.h"
+#include "kazmath.h"
 
 #define CLIP_WIDTH    6
 #define CLIP_Z_NEAR   3

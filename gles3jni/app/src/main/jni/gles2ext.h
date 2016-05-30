@@ -10,7 +10,7 @@
 #ifdef TARGET_PLATFORM_LINUX
 #define GL_GLEXT_PROTOTYPES
 #include <GLES2/gl2ext.h>
-#elif TARGET_PLATFORM_IOS
+#elif TARGET_OS_IOS
 #include <OpenGLES/ES2/glext.h>
 #endif
 

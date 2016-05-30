@@ -9,7 +9,7 @@
 
 #ifdef TARGET_PLATFORM_LINUX
 #include <GLES2/gl2.h>
-#elif TARGET_PLATFORM_IOS
+#elif TARGET_OS_IOS
 #include <OpenGLES/ES2/gl.h>
 #endif
 

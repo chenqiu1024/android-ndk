@@ -34,305 +34,305 @@
 
 const char* VertexShaderSource = STRINGIZE
 (
- //#ifdef GLES
- precision highp float;
- //#endif
- 
- //#define LITTLE_PLANET
- uniform int LITTLE_PLANET;
- varying float v_LITTLE_PLANET;
- 
- attribute vec4 a_position; // 1
- attribute vec4 a_color; // 2
- attribute vec2 a_texCoord;
- 
- attribute vec2 a_texCoordL;
- attribute vec2 a_texCoordR;
- 
- uniform mat4 u_projectionMat;
- uniform mat4 u_cameraMat;
- uniform mat4 u_modelMat;
- 
- varying vec4 v_color; // 3
- varying vec2 v_texCoord;
- 
- varying vec2 v_texCoordL;
- varying vec2 v_texCoordR;
- 
- void main(void) { // 4
-     v_color = a_color; // 5
-     v_texCoord = a_texCoord;
-     v_texCoordL = a_texCoordL;
-     v_texCoordR = a_texCoordR;
-     // Modify gl_Position line as follows
-     if (LITTLE_PLANET == 1)
-     {
-         v_LITTLE_PLANET = 1.0;
-         gl_Position = a_position;
-     }
-     else
-     {
-         v_LITTLE_PLANET = 0.0;
-         gl_Position = u_projectionMat * u_cameraMat * u_modelMat * a_position;
-     }
- }
- 
- );
+//#ifdef GLES
+        precision highp float;
+        //#endif
+
+        //#define LITTLE_PLANET
+        uniform int LITTLE_PLANET;
+        varying float v_LITTLE_PLANET;
+
+        attribute vec4 a_position; // 1
+        attribute vec4 a_color; // 2
+        attribute vec2 a_texCoord;
+
+        attribute vec2 a_texCoordL;
+        attribute vec2 a_texCoordR;
+
+        uniform mat4 u_projectionMat;
+        uniform mat4 u_cameraMat;
+        uniform mat4 u_modelMat;
+
+        varying vec4 v_color; // 3
+        varying vec2 v_texCoord;
+
+        varying vec2 v_texCoordL;
+        varying vec2 v_texCoordR;
+
+        void main(void) { // 4
+            v_color = a_color; // 5
+            v_texCoord = a_texCoord;
+            v_texCoordL = a_texCoordL;
+            v_texCoordR = a_texCoordR;
+            // Modify gl_Position line as follows
+            if (LITTLE_PLANET == 1)
+            {
+                v_LITTLE_PLANET = 1.0;
+                gl_Position = a_position;
+            }
+            else
+            {
+                v_LITTLE_PLANET = 0.0;
+                gl_Position = u_projectionMat * u_cameraMat * u_modelMat * a_position;
+            }
+        }
+
+);
 
 ///Ref: http://blog.csdn.net/opengl_es/article/details/17787495
 const char* FragmentShaderSource = STRINGIZE
 (
- 
+
 #ifdef EXTERNAL
 #extension GL_OES_EGL_image_external : require
 #endif
- 
- precision highp float;
- 
- uniform int FLIP_X;
- uniform int FLIP_Y;
- 
- uniform int DRAW_GRID_SPHERE;
- 
- uniform int CONVERT_WITH_LUT;
- 
- uniform int PLAIN_STITCH;
- 
- ///Ref: http://blog.csdn.net/opengl_es/article/details/17787495
- varying float v_LITTLE_PLANET;
- 
- uniform int SEPARATE_SOURCE_TEXTURES;
- 
- uniform int ANTI_ALIAS;
- 
- varying highp vec2 v_texCoord;
- 
- varying highp vec2 v_texCoordL;
- varying highp vec2 v_texCoordR;
- 
+
+        precision highp float;
+
+        uniform int FLIP_X;
+        uniform int FLIP_Y;
+
+        uniform int DRAW_GRID_SPHERE;
+
+        uniform int CONVERT_WITH_LUT;
+
+        uniform int PLAIN_STITCH;
+
+        ///Ref: http://blog.csdn.net/opengl_es/article/details/17787495
+        varying float v_LITTLE_PLANET;
+
+        uniform int SEPARATE_SOURCE_TEXTURES;
+
+        uniform int ANTI_ALIAS;
+
+        varying highp vec2 v_texCoord;
+
+        varying highp vec2 v_texCoordL;
+        varying highp vec2 v_texCoordR;
+
 #ifdef EXTERNAL
- uniform samplerExternalOES u_textureL;
- uniform samplerExternalOES u_textureR;
+        uniform samplerExternalOES u_textureL;
+        uniform samplerExternalOES u_textureR;
 #else
- uniform sampler2D u_textureL;
- uniform sampler2D u_textureR;
+        uniform sampler2D u_textureL;
+        uniform sampler2D u_textureR;
 #endif
- 
- uniform highp vec2 u_dstSize;
- uniform highp vec2 u_srcSizeL;
- uniform highp vec2 u_srcSizeR;
- 
- uniform vec3 u_colors[512];
- uniform int  u_longitudeFragments;
- uniform int  u_latitudeFragments;
- 
- uniform float u_scale;
- uniform float u_aspect;//, time;
- //uniform mat3 transform;
- uniform mat4 u_modelMat;
- 
- const float PI = 3.141592653589793;
- 
- vec3 YUVTexel2RGB(vec3 yuvTexel) {
-     float y = yuvTexel.r;
-     float u = yuvTexel.g - 0.5;
-     float v = yuvTexel.b - 0.5;
-     vec3 rgb;
-     rgb.r = y +             1.402 * v;
-     rgb.g = y - 0.344 * u - 0.714 * v;
-     rgb.b = y + 1.772 * u;
-     return rgb;
- }
- 
- highp vec4 gridCoord(highp vec2 texcoord, highp vec2 textureSize) {
-     highp vec2 grid = texcoord * textureSize - vec2(0.5, 0.5);
-     highp vec2 major = floor(grid);
-     highp vec2 minor = grid - major;
-     return vec4(major, minor);
- }
- 
- highp vec4 texture2D_AA(sampler2D tex, highp vec2 textureSize, highp vec4 gridCoord) {
-     if (ANTI_ALIAS == 1)
-     {
-         highp vec2 gridLB = gridCoord.xy;
-         highp float p = gridCoord.z;
-         highp float q = gridCoord.w;
-         vec4 LB = texture2D(tex, gridLB / textureSize);
-         vec4 LT = texture2D(tex, (gridLB + vec2(0.0, 1.0)) / textureSize);
-         vec4 RT = texture2D(tex, (gridLB + vec2(1.0, 1.0)) / textureSize);
-         vec4 RB = texture2D(tex, (gridLB + vec2(1.0, 0.0)) / textureSize);
-         return (RT * p + LT * (1.0 - p)) * q + (RB * p + LB * (1.0 - p)) * (1.0 - q);
-     }
-     else
-     {
-         return texture2D(tex, (gridCoord.xy + gridCoord.zw) / textureSize);
-     }
- }
- 
-const float MOLT_BAND_WIDTH = 20.0;
- 
- vec2 lutWeights(vec2 dstTexCoord) {
-     float weight = 1.0;
-     float weight1 = 0.0;
-     
-     highp float bound0 = (u_dstSize.x * 0.25 - MOLT_BAND_WIDTH / 2.0) / u_dstSize.x;//
-     highp float bound1 = (u_dstSize.x * 0.25 + MOLT_BAND_WIDTH / 2.0) / u_dstSize.x;//
-     highp float bound2 = (u_dstSize.x * 0.75 - MOLT_BAND_WIDTH / 2.0) / u_dstSize.x;//
-     highp float bound3 = (u_dstSize.x * 0.75 + MOLT_BAND_WIDTH / 2.0) / u_dstSize.x;//
-     highp float band0Width = (bound1 - bound0) * u_dstSize.x;
-     highp float band1Width = (bound3 - bound2) * u_dstSize.x;
-     
-     if (dstTexCoord.s >= bound1 && dstTexCoord.s < bound2)
-     {
-         // Use right LUT:
-         weight1 = 1.0;
-         weight = 0.0;
-     }
-     else if (dstTexCoord.s < bound0 || dstTexCoord.s >= bound3)
-     {
-         // Use left LUT:
-         weight = 1.0;
-         weight1 = 0.0;
-     }
-     else if (dstTexCoord.s >= bound2)
-     {
-         // Molt:
-         weight = (dstTexCoord.s - bound2) * u_dstSize.x / band1Width;
-         weight1 = 1.0 - weight;
-     }
-     else
-     {
-         weight1 = (dstTexCoord.s - bound0) * u_dstSize.x / band0Width;
-         weight = 1.0 - weight1;
-     }
-     
-     return vec2(weight, weight1);
- }
- 
-// highp vec4 lutMappedTexcoords(vec2 dstTexCoord) {
-//     highp vec4 dstGridCoord = gridCoord(dstTexCoord, u_dstSize);
-//     highp vec4 lutLX = texture2D_AA(u_lLUT_x, u_dstSize, dstGridCoord);
-//     highp vec4 lutLY = texture2D_AA(u_lLUT_y, u_dstSize, dstGridCoord);
-//     highp vec4 lutRX = texture2D_AA(u_rLUT_x, u_dstSize, dstGridCoord);
-//     highp vec4 lutRY = texture2D_AA(u_rLUT_y, u_dstSize, dstGridCoord);
-//     
-//     highp vec2 texcoordL = vec2(lutLX.r * 4096.0 + lutLX.g * 4.096, lutLY.r * 4096.0 + lutLY.g * 4.096) / u_srcSizeL;
-//     highp vec2 texcoordR;
-//     
-//     if (SEPARATE_SOURCE_TEXTURES == 1)
-//     {
-//         texcoordR = vec2(lutRX.r * 4096.0 + lutRX.g * 4.096, lutRY.r * 4096.0 + lutRY.g * 4.096) / u_srcSizeR;
-//     }
-//     else
-//     {
-//         texcoordR = vec2(lutRX.r * 4096.0 + lutRX.g * 4.096, lutRY.r * 4096.0 + lutRY.g * 4.096) / u_srcSizeR + vec2(0.5, 0.0);
-//     }
-//     
-//     return vec4(texcoordL, texcoordR);
-// }
- 
- vec3 color3OfTexCoord(vec2 dstTexCoord) {
-     if (PLAIN_STITCH == 1)
-     {
-         highp vec2 srcTexcoord;
-         float H = (u_srcSizeL.y > u_srcSizeR.y ? u_srcSizeL.y : u_srcSizeR.y);
-         if (dstTexCoord.s <= u_srcSizeL.x / (u_srcSizeL.x + u_srcSizeR.x))
-         {
-             srcTexcoord.s = dstTexCoord.s * (u_srcSizeL.x + u_srcSizeR.x) / u_srcSizeL.x;
-             srcTexcoord.t = dstTexCoord.t * H / u_srcSizeL.y;
-             return texture2D(u_textureL, srcTexcoord).rgb;
-         }
-         else
-         {
-             srcTexcoord.s = (dstTexCoord.s - u_srcSizeL.x / (u_srcSizeL.x + u_srcSizeR.x)) * (u_srcSizeL.x + u_srcSizeR.x) / u_srcSizeR.x;
-             srcTexcoord.t = dstTexCoord.t * H / u_srcSizeR.y;
-             return texture2D(u_textureR, srcTexcoord).rgb;
-         }
-     }
-     else if (CONVERT_WITH_LUT == 1)
-     {
-         vec4 lTexel;
-         vec4 rTexel;
-         highp vec2 texcoordL = v_texCoordL;
-         highp vec2 texcoordR = v_texCoordR;
-         
-//         lTexel = texture2D(u_textureL, texcoordL);
-//         rTexel = texture2D(u_textureR, texcoordR);
-//         highp vec4 gridCoordL = gridCoord(texcoordL, u_srcSizeL);
-//         highp vec4 gridCoordR = gridCoord(texcoordR, u_srcSizeR);
-//         
-//         texcoordL = (gridCoordL.xy + gridCoordL.zw) / u_srcSizeL;
-//         texcoordR = (gridCoordR.xy + gridCoordR.zw) / u_srcSizeR;
-         
-         lTexel = texture2D(u_textureL, texcoordL);//texture2D_AA_External(u_textureL, u_srcSizeL, gridCoordL);
-         rTexel = texture2D(u_textureR, texcoordR);//texture2D_AA_External(u_textureR, u_srcSizeR, gridCoordR);
-         
-         vec2 weights = lutWeights(dstTexCoord);
-         return (lTexel * weights.s + rTexel * weights.t).rgb;
-     }
-     else
-     {
-         return texture2D(u_textureL, dstTexCoord).rgb;
-     }
- }
- 
- void main()
+
+        uniform highp vec2 u_dstSize;
+        uniform highp vec2 u_srcSizeL;
+        uniform highp vec2 u_srcSizeR;
+
+        uniform vec3 u_colors[512];
+        uniform int  u_longitudeFragments;
+        uniform int  u_latitudeFragments;
+
+        uniform float u_scale;
+        uniform float u_aspect;//, time;
+        //uniform mat3 transform;
+        uniform mat4 u_modelMat;
+
+        const float PI = 3.141592653589793;
+
+        vec3 YUVTexel2RGB(vec3 yuvTexel) {
+        float y = yuvTexel.r;
+        float u = yuvTexel.g - 0.5;
+        float v = yuvTexel.b - 0.5;
+        vec3 rgb;
+        rgb.r = y +             1.402 * v;
+        rgb.g = y - 0.344 * u - 0.714 * v;
+        rgb.b = y + 1.772 * u;
+        return rgb;
+}
+
+        highp vec4 gridCoord(highp vec2 texcoord, highp vec2 textureSize) {
+        highp vec2 grid = texcoord * textureSize - vec2(0.5, 0.5);
+        highp vec2 major = floor(grid);
+        highp vec2 minor = grid - major;
+        return vec4(major, minor);
+}
+
+        highp vec4 texture2D_AA(sampler2D tex, highp vec2 textureSize, highp vec4 gridCoord) {
+        if (ANTI_ALIAS == 1)
 {
-    highp float texcoordS;
-    highp float texcoordT;
-    if (FLIP_X == 0)
+        highp vec2 gridLB = gridCoord.xy;
+        highp float p = gridCoord.z;
+        highp float q = gridCoord.w;
+        vec4 LB = texture2D(tex, gridLB / textureSize);
+        vec4 LT = texture2D(tex, (gridLB + vec2(0.0, 1.0)) / textureSize);
+        vec4 RT = texture2D(tex, (gridLB + vec2(1.0, 1.0)) / textureSize);
+        vec4 RB = texture2D(tex, (gridLB + vec2(1.0, 0.0)) / textureSize);
+        return (RT * p + LT * (1.0 - p)) * q + (RB * p + LB * (1.0 - p)) * (1.0 - q);
+}
+        else
+{
+        return texture2D(tex, (gridCoord.xy + gridCoord.zw) / textureSize);
+}
+}
+
+        const float MOLT_BAND_WIDTH = 20.0;
+
+        vec2 lutWeights(vec2 dstTexCoord) {
+        float weight = 1.0;
+        float weight1 = 0.0;
+
+        highp float bound0 = (u_dstSize.x * 0.25 - MOLT_BAND_WIDTH / 2.0) / u_dstSize.x;//
+        highp float bound1 = (u_dstSize.x * 0.25 + MOLT_BAND_WIDTH / 2.0) / u_dstSize.x;//
+        highp float bound2 = (u_dstSize.x * 0.75 - MOLT_BAND_WIDTH / 2.0) / u_dstSize.x;//
+        highp float bound3 = (u_dstSize.x * 0.75 + MOLT_BAND_WIDTH / 2.0) / u_dstSize.x;//
+        highp float band0Width = (bound1 - bound0) * u_dstSize.x;
+        highp float band1Width = (bound3 - bound2) * u_dstSize.x;
+
+        if (dstTexCoord.s >= bound1 && dstTexCoord.s < bound2)
+{
+        // Use right LUT:
+        weight1 = 1.0;
+        weight = 0.0;
+}
+        else if (dstTexCoord.s < bound0 || dstTexCoord.s >= bound3)
+{
+        // Use left LUT:
+        weight = 1.0;
+        weight1 = 0.0;
+}
+        else if (dstTexCoord.s >= bound2)
+{
+        // Molt:
+        weight = (dstTexCoord.s - bound2) * u_dstSize.x / band1Width;
+        weight1 = 1.0 - weight;
+}
+        else
+{
+        weight1 = (dstTexCoord.s - bound0) * u_dstSize.x / band0Width;
+        weight = 1.0 - weight1;
+}
+
+        return vec2(weight, weight1);
+}
+
+        // highp vec4 lutMappedTexcoords(vec2 dstTexCoord) {
+        //     highp vec4 dstGridCoord = gridCoord(dstTexCoord, u_dstSize);
+        //     highp vec4 lutLX = texture2D_AA(u_lLUT_x, u_dstSize, dstGridCoord);
+        //     highp vec4 lutLY = texture2D_AA(u_lLUT_y, u_dstSize, dstGridCoord);
+        //     highp vec4 lutRX = texture2D_AA(u_rLUT_x, u_dstSize, dstGridCoord);
+        //     highp vec4 lutRY = texture2D_AA(u_rLUT_y, u_dstSize, dstGridCoord);
+        //
+        //     highp vec2 texcoordL = vec2(lutLX.r * 4096.0 + lutLX.g * 4.096, lutLY.r * 4096.0 + lutLY.g * 4.096) / u_srcSizeL;
+        //     highp vec2 texcoordR;
+        //
+        //     if (SEPARATE_SOURCE_TEXTURES == 1)
+        //     {
+        //         texcoordR = vec2(lutRX.r * 4096.0 + lutRX.g * 4.096, lutRY.r * 4096.0 + lutRY.g * 4.096) / u_srcSizeR;
+        //     }
+        //     else
+        //     {
+        //         texcoordR = vec2(lutRX.r * 4096.0 + lutRX.g * 4.096, lutRY.r * 4096.0 + lutRY.g * 4.096) / u_srcSizeR + vec2(0.5, 0.0);
+        //     }
+        //
+        //     return vec4(texcoordL, texcoordR);
+        // }
+
+        vec3 color3OfTexCoord(vec2 dstTexCoord) {
+        if (PLAIN_STITCH == 1)
+{
+        highp vec2 srcTexcoord;
+        float H = (u_srcSizeL.y > u_srcSizeR.y ? u_srcSizeL.y : u_srcSizeR.y);
+        if (dstTexCoord.s <= u_srcSizeL.x / (u_srcSizeL.x + u_srcSizeR.x))
+{
+        srcTexcoord.s = dstTexCoord.s * (u_srcSizeL.x + u_srcSizeR.x) / u_srcSizeL.x;
+        srcTexcoord.t = dstTexCoord.t * H / u_srcSizeL.y;
+        return texture2D(u_textureL, srcTexcoord).rgb;
+}
+        else
+{
+        srcTexcoord.s = (dstTexCoord.s - u_srcSizeL.x / (u_srcSizeL.x + u_srcSizeR.x)) * (u_srcSizeL.x + u_srcSizeR.x) / u_srcSizeR.x;
+        srcTexcoord.t = dstTexCoord.t * H / u_srcSizeR.y;
+        return texture2D(u_textureR, srcTexcoord).rgb;
+}
+}
+        else if (CONVERT_WITH_LUT == 1)
+{
+        vec4 lTexel;
+        vec4 rTexel;
+        highp vec2 texcoordL = v_texCoordL;
+        highp vec2 texcoordR = v_texCoordR;
+
+        //         lTexel = texture2D(u_textureL, texcoordL);
+        //         rTexel = texture2D(u_textureR, texcoordR);
+        //         highp vec4 gridCoordL = gridCoord(texcoordL, u_srcSizeL);
+        //         highp vec4 gridCoordR = gridCoord(texcoordR, u_srcSizeR);
+        //
+        //         texcoordL = (gridCoordL.xy + gridCoordL.zw) / u_srcSizeL;
+        //         texcoordR = (gridCoordR.xy + gridCoordR.zw) / u_srcSizeR;
+
+        lTexel = texture2D(u_textureL, texcoordL);//texture2D_AA_External(u_textureL, u_srcSizeL, gridCoordL);
+        rTexel = texture2D(u_textureR, texcoordR);//texture2D_AA_External(u_textureR, u_srcSizeR, gridCoordR);
+
+        vec2 weights = lutWeights(dstTexCoord);
+        return (lTexel * weights.s + rTexel * weights.t).rgb;
+}
+        else
+{
+        return texture2D(u_textureL, dstTexCoord).rgb;
+}
+}
+
+        void main()
+{
+        highp float texcoordS;
+        highp float texcoordT;
+        if (FLIP_X == 0)
         texcoordS = v_texCoord.s;
-    else
+        else
         texcoordS = 1.0 - v_texCoord.s;
-    
+
 #ifdef FOR_520
-    if (FLIP_Y == 1)
+        if (FLIP_Y == 1)
 #else
         if (FLIP_Y == 0)
 #endif
-            texcoordT = v_texCoord.t;
+        texcoordT = v_texCoord.t;
         else
-            texcoordT = 1.0 - v_texCoord.t;
-    
-    highp vec2 texcoord = vec2(texcoordS, texcoordT);
-    
-    if (v_LITTLE_PLANET >= 0.5)
-    {
+        texcoordT = 1.0 - v_texCoord.t;
+
+        highp vec2 texcoord = vec2(texcoordS, texcoordT);
+
+        if (v_LITTLE_PLANET >= 0.5)
+{
         vec2 rads = vec2(PI * 2., PI);
-        
+
         vec2 pnt = vec2(v_texCoord.y - .5, v_texCoord.x - .5) * vec2(u_scale, u_scale * u_aspect);
-        
+
         // Project to Sphere
         float x2y2 = pnt.x * pnt.x + pnt.y * pnt.y;
         vec3 sphere_pnt = vec3(2. * pnt, x2y2 - 1.) / (x2y2 + 1.);
         sphere_pnt = (vec4(sphere_pnt, 1.0) * u_modelMat).xyz;
-        
+
         // Convert to Spherical Coordinates
         float r = length(sphere_pnt);
         float lon = atan(sphere_pnt.y, sphere_pnt.x);
         float lat = acos(sphere_pnt.z / r);
         texcoord = vec2(lon, lat) / rads;
-        
+
         if (texcoord.s < 0.0) texcoord.s += 1.0;
         if (texcoord.t < 0.0) texcoord.t += 1.0;
         if (texcoord.s > 1.0) texcoord.s -= 1.0;
         if (texcoord.t > 1.0) texcoord.t -= 1.0;
-    }
-    
-    if (DRAW_GRID_SPHERE == 1)
-    {
+}
+
+        if (DRAW_GRID_SPHERE == 1)
+{
         int row = int(texcoord.t * float(u_latitudeFragments));
         int col = int(texcoord.s * float(u_longitudeFragments));
         gl_FragColor = vec4(u_colors[row * u_longitudeFragments + col].rgb, 1.0);
-    }
-    else
-    {
+}
+        else
+{
         gl_FragColor = vec4(color3OfTexCoord(texcoord), 1.0);
         //    gl_FragColor = texture2D(u_textureL, texcoord);
-    }
+}
 }
 
- );
+);
 
 /// 000:Plain 001:Sphere 010:PlainV1 011:SphereV1 10X:LittlePlanet 11X:LittlePlanetV1
 
@@ -341,36 +341,32 @@ const int DisplayModesCount = 6;
 const char* DisplayModeString[] = {"SphereV1", "PlanetV1", "Sphere", "Planet", "PlainV1", "Plain"};
 
 MadvGLProgram::MadvGLProgram(const GLchar* const* vertexSources, int vertexSourcesCount, const GLchar* const* fragmentSources, int fragmentSourcesCount)
-: GLProgram(vertexSources, vertexSourcesCount, fragmentSources, fragmentSourcesCount)
-, _leftTextureSlot(-1)
-, _rightTextureSlot(-1)
-, _leftTexcoordSlot(-1)
-, _rightTexcoordSlot(-1)
-//, _lxLUTSlot(-1)
-//, _lyLUTSlot(-1)
-//, _rxLUTSlot(-1)
-//, _ryLUTSlot(-1)
-, _dstSizeSlot(-1)
-, _leftSrcSizeSlot(-1)
-, _rightSrcSizeSlot(-1)
-, _scaleSlot(-1)
-, _aspectSlot(-1)
-, _transformSlot(-1)
-, _yLeftTextureSlot(-1)
-, _uLeftTextureSlot(-1)
-, _vLeftTextureSlot(-1)
-, _yRightTextureSlot(-1)
-, _uRightTextureSlot(-1)
-, _vRightTextureSlot(-1)
-, _colorspaceYUVSlot(-1)
-, _drawGridSphereSlot(-1)
-, _convertWithLUTSlot(-1)
-, _plainStitchSlot(-1)
-, _littlePlanetSlot(-1)
-, _separateSourceTexturesSlot(-1)
-, _antiAliasSlot(-1)
-, _flipXSlot(-1)
-, _flipYSlot(-1)
+        : GLProgram(vertexSources, vertexSourcesCount, fragmentSources, fragmentSourcesCount)
+        , _leftTextureSlot(-1)
+        , _rightTextureSlot(-1)
+        , _leftTexcoordSlot(-1)
+        , _rightTexcoordSlot(-1)
+        , _dstSizeSlot(-1)
+        , _leftSrcSizeSlot(-1)
+        , _rightSrcSizeSlot(-1)
+        , _scaleSlot(-1)
+        , _aspectSlot(-1)
+        , _transformSlot(-1)
+        , _yLeftTextureSlot(-1)
+        , _uLeftTextureSlot(-1)
+        , _vLeftTextureSlot(-1)
+        , _yRightTextureSlot(-1)
+        , _uRightTextureSlot(-1)
+        , _vRightTextureSlot(-1)
+        , _colorspaceYUVSlot(-1)
+        , _drawGridSphereSlot(-1)
+        , _convertWithLUTSlot(-1)
+        , _plainStitchSlot(-1)
+        , _littlePlanetSlot(-1)
+        , _separateSourceTexturesSlot(-1)
+        , _antiAliasSlot(-1)
+        , _flipXSlot(-1)
+        , _flipYSlot(-1)
 {
     _colorspaceYUVSlot = glGetUniformLocation(_program, "COLORSPACE_YUV");
     _drawGridSphereSlot = glGetUniformLocation(_program, "DRAW_GRID_SPHERE");
@@ -379,28 +375,28 @@ MadvGLProgram::MadvGLProgram(const GLchar* const* vertexSources, int vertexSourc
     _littlePlanetSlot = glGetUniformLocation(_program, "LITTLE_PLANET");
     _separateSourceTexturesSlot = glGetUniformLocation(_program, "SEPARATE_SOURCE_TEXTURES");
     _antiAliasSlot = glGetUniformLocation(_program, "ANTI_ALIAS");
-    
+
     _flipXSlot = glGetUniformLocation(_program, "FLIP_X");
     _flipYSlot = glGetUniformLocation(_program, "FLIP_Y");
-    
+
     _leftTexcoordSlot = glGetAttribLocation(_program, "a_texCoordL");
     _rightTexcoordSlot = glGetAttribLocation(_program, "a_texCoordR");
-    
+
     _leftTextureSlot = glGetUniformLocation(_program, "u_textureL");
     _rightTextureSlot = glGetUniformLocation(_program, "u_textureR");
-    
-//    _lxLUTSlot = glGetUniformLocation(_program, "u_lLUT_x");
-//    _lyLUTSlot = glGetUniformLocation(_program, "u_lLUT_y");
-//    _rxLUTSlot = glGetUniformLocation(_program, "u_rLUT_x");
-//    _ryLUTSlot = glGetUniformLocation(_program, "u_rLUT_y");
+
+    //    _lxLUTSlot = glGetUniformLocation(_program, "u_lLUT_x");
+    //    _lyLUTSlot = glGetUniformLocation(_program, "u_lLUT_y");
+    //    _rxLUTSlot = glGetUniformLocation(_program, "u_rLUT_x");
+    //    _ryLUTSlot = glGetUniformLocation(_program, "u_rLUT_y");
     _dstSizeSlot = glGetUniformLocation(_program, "u_dstSize");
     _leftSrcSizeSlot = glGetUniformLocation(_program, "u_srcSizeL");
     _rightSrcSizeSlot = glGetUniformLocation(_program, "u_srcSizeR");
-    
+
     _scaleSlot = glGetUniformLocation(_program, "u_scale");
     _aspectSlot = glGetUniformLocation(_program, "u_aspect");
     _transformSlot = glGetUniformLocation(_program, "u_transform");
-    
+
     _yLeftTextureSlot = glGetUniformLocation(_program, "u_textureL_Y");
     _uLeftTextureSlot = glGetUniformLocation(_program, "u_textureL_U");
     _vLeftTextureSlot = glGetUniformLocation(_program, "u_textureL_V");
@@ -417,8 +413,8 @@ MadvGLRenderer::~MadvGLRenderer() {
     Mesh3DRelease(&_lutQuadMesh);
     Mesh3DRelease(&_sphereMesh);
     Mesh3DRelease(&_lutSphereMesh);
-    
-//    glDeleteFramebuffers(1, &_framebuffer);
+
+    //    glDeleteFramebuffers(1, &_framebuffer);
     //        glDeleteRenderbuffers(1, &_depthbuffer);
 #ifdef USE_MSAA
     glDeleteFramebuffers(1, &_msaaFramebuffer);
@@ -426,49 +422,42 @@ MadvGLRenderer::~MadvGLRenderer() {
     glDeleteRenderbuffers(1, &_msaaDepthbuffer);
 #endif
     printf("MadvGLRenderer $ dealloc\n");
-    glDeleteTextures(1, &_textureL);
-    glDeleteTextures(1, &_textureR);
-//    glDeleteTextures(1, &_LXTexture);
-//    glDeleteTextures(1, &_LYTexture);
-//    glDeleteTextures(1, &_RXTexture);
-//    glDeleteTextures(1, &_RYTexture);
+    glDeleteTextures(1, &_srcTextureL);
+    glDeleteTextures(1, &_srcTextureR);
     glDeleteTextures(3, _yuvTextures);
-    _textureL = _textureR = 0;//_LXTexture = _LYTexture = _RXTexture = _RYTexture = 0;
+    _srcTextureL = _srcTextureR = 0;
     for (int i=0; i<3; i++)
     {
         _yuvTextures[i] = 0;
     }
-    
+
     _glCamera = NULL;
 }
 
 MadvGLRenderer::MadvGLRenderer(const char* lutPath)//int framebuffer, int width, int height)
-: _textureL(0)
-, _textureR(0)
-//, _LXTexture(0)
-//, _LYTexture(0)
-//, _RXTexture(0)
-//, _RYTexture(0)
-, _currentGLProgram(NULL)
+        : _srcTextureL(0)
+        , _srcTextureR(0)
+        , _srcTextureTarget(GL_TEXTURE_2D)
+        , _currentGLProgram(NULL)
 #ifdef DRAW_GRID_SPHERE
 , _uniGridColors(-1)
 , _uniLongitudeFragments(-1)
 , _uniLatitudeFragments(-1)
 #endif
-, _pCurrentMesh(NULL)
+        , _pCurrentMesh(NULL)
 {
     _needRenderNewSource = false;
-    
-//    _framebuffer = framebuffer;
-//    //                glGenRenderbuffers(1, &_depthbuffer);
-//    //                glBindRenderbuffer(GL_RENDERBUFFER, _depthbuffer);
-//    //                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, _width, _height);
-//    //                glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
-//    //                glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depthbuffer);
-//    
-//    _width = width;
-//    _height = height;
-    
+
+    //    _framebuffer = framebuffer;
+    //    //                glGenRenderbuffers(1, &_depthbuffer);
+    //    //                glBindRenderbuffer(GL_RENDERBUFFER, _depthbuffer);
+    //    //                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, _width, _height);
+    //    //                glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
+    //    //                glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depthbuffer);
+    //
+    //    _width = width;
+    //    _height = height;
+
 #ifdef EXPAND_AS_PLANE
     _mesh = createGrids(2160, 1080, LONGITUDE_SEGMENTS, LATITUDE_SEGMENTS);
 #else
@@ -480,7 +469,7 @@ MadvGLRenderer::MadvGLRenderer(const char* lutPath)//int framebuffer, int width,
     _sphereMesh = createSphereV0(SPHERE_RADIUS, LONGITUDE_SEGMENTS, LATITUDE_SEGMENTS);
     _lutSphereMesh = createSphereV0(SPHERE_RADIUS, LONGITUDE_SEGMENTS, LATITUDE_SEGMENTS);
 #endif
-    
+
 #ifdef DRAW_GRID_SPHERE
     static dispatch_once_t once;
     dispatch_once(&once, ^{
@@ -504,12 +493,12 @@ MadvGLRenderer::MadvGLRenderer(const char* lutPath)//int framebuffer, int width,
         }
     });
 #endif
-    
+
     _glCamera = new GLCamera;
     _glCamera->setYawRadius(M_PI / 2);
-    
+
     _yuvTextures[0] = _yuvTextures[1] = _yuvTextures[2] = -1;
-    
+
     pthread_mutex_init(&_mutex, NULL);
 }
 
@@ -541,7 +530,7 @@ int ushortTexture(const GLushort* data, Vec2f lutDstSize, int x, int y) {
     if (x >= lutDstSize.s) x = lutDstSize.s - 1;
     if (y < 0) y = 0;
     if (y >= lutDstSize.t) y = lutDstSize.t - 1;
-    
+
     return (int) data[(int)(lutDstSize.s * y + x)];
 }
 
@@ -561,9 +550,9 @@ void convertMesh3DWithLUT(Mesh3D& mesh, Vec2f lutDstSize, Vec2f leftSrcSize,Vec2
     for (int i=0; i<mesh.vertexCount; ++i)
     {
         P4C4T2f& vertex = mesh.vertices[i];
-        
+
         Vec2f dstTexCoord = Vec2f{vertex.s, vertex.t};
-        
+
         /// lutMappedTexcoords() :
         Vec4f dstGridCoord = gridCoord(dstTexCoord, lutDstSize);
         float lxInt = ushortTexture(lxIntData, lutDstSize, dstGridCoord);
@@ -574,7 +563,7 @@ void convertMesh3DWithLUT(Mesh3D& mesh, Vec2f lutDstSize, Vec2f leftSrcSize,Vec2
         float rxMin = ushortTexture(rxMinData, lutDstSize, dstGridCoord);
         float ryInt = ushortTexture(ryIntData, lutDstSize, dstGridCoord);
         float ryMin = ushortTexture(ryMinData, lutDstSize, dstGridCoord);
-        
+
         Vec2f texcoordL = Vec2f{(lxInt + lxMin / 1000.f) / leftSrcSize.s, (lyInt + lyMin / 1000.f) / leftSrcSize.t};
         Vec2f texcoordR;
 #ifdef SEPARATE_SOURCE_TEXTURES
@@ -594,21 +583,33 @@ void convertMesh3DWithLUT(Mesh3D& mesh, Vec2f lutDstSize, Vec2f leftSrcSize,Vec2
 }
 
 void MadvGLRenderer::setLUTData(Vec2f lutDstSize, Vec2f leftSrcSize,Vec2f rightSrcSize, int dataSizeInShort, const GLushort* lxIntData, const GLushort* lxMinData, const GLushort* lyIntData, const GLushort* lyMinData, const GLushort* rxIntData, const GLushort* rxMinData, const GLushort* ryIntData, const GLushort* ryMinData) {
+    _lutDstSize = lutDstSize;
+
     Mesh3DRelease(&_lutSphereMesh);
     Mesh3DRelease(&_lutQuadMesh);
-    
+
     _lutSphereMesh = createSphereV0(SPHERE_RADIUS, LONGITUDE_SEGMENTS, LATITUDE_SEGMENTS);
     _lutQuadMesh = createGrids(2.f, 2.f, LONGITUDE_SEGMENTS, LATITUDE_SEGMENTS);
-    
+
     convertMesh3DWithLUT(_lutSphereMesh, lutDstSize, leftSrcSize, rightSrcSize, dataSizeInShort, lxIntData, lxMinData, lyIntData, lyMinData, rxIntData, rxMinData, ryIntData, ryMinData);
     convertMesh3DWithLUT(_lutQuadMesh, lutDstSize, leftSrcSize, rightSrcSize, dataSizeInShort, lxIntData, lxMinData, lyIntData, lyMinData, rxIntData, rxMinData, ryIntData, ryMinData);
 }
 
+void MadvGLRenderer::setSourceTextures(bool separateSourceTexture, GLint srcTextureL, GLint srcTextureR, Vec2f srcTextureSizeL, Vec2f srcTextureSizeR, GLenum srcTextureTarget, bool isYUVColorSpace) {
+    _separateSourceTexture = separateSourceTexture;
+    _srcTextureL = srcTextureL;
+    _srcTextureR = srcTextureR;
+    _lutSrcSizeL = srcTextureSizeL;
+    _lutSrcSizeR = srcTextureSizeR;
+    _srcTextureTarget = (0 >= srcTextureTarget) ? GL_TEXTURE_2D : srcTextureTarget;
+    _isYUVColorSpace = isYUVColorSpace;
+}
+
 void MadvGLRenderer::prepareGLPrograms() {
     if (_currentGLProgram) return;
-    
+
     _currentGLProgram = NULL;
-    
+
     //    const GLchar* const vertexSource = [[NSString stringOfBundleFile:@"PosColorTexMat_Vertex" extName:@"glsl"] UTF8String];
     //    const GLchar* lutRgbFragmentSource = [[NSString stringOfBundleFile:@"LUT_RGB_Fragment" extName:@"glsl"] UTF8String];
     _currentGLProgram = new MadvGLProgram(&VertexShaderSource,1, &FragmentShaderSource,1);
@@ -617,7 +618,7 @@ void MadvGLRenderer::prepareGLPrograms() {
     _uniLongitudeFragments = glGetUniformLocation(_shaderProgram, "u_longitudeFragments");
     _uniLatitudeFragments = glGetUniformLocation(_shaderProgram, "u_latitudeFragments");
 #endif
-    
+
 }
 
 void MadvGLRenderer::setGLProgramVariables(GLint x, GLint y, GLint width, GLint height) {
@@ -628,18 +629,18 @@ void MadvGLRenderer::setGLProgramVariables(GLint x, GLint y, GLint width, GLint 
     glUniform1i(_uniLongitudeFragments, LONGITUDE_SEGMENTS);
     glUniform1i(_uniLatitudeFragments, LATITUDE_SEGMENTS);
 #endif
-    
+
     glUniform1i(_currentGLProgram->getColorSpaceYUVSlot(), (_isYUVColorSpace? 1:0));
     glUniform1i(_currentGLProgram->getDrawGridSphereSlot(), 0);
     glUniform1i(_currentGLProgram->getConvertWithLUTSlot(), ((_currentDisplayMode & PanoramaDisplayModeLUT) ? 1 : 0));
     glUniform1i(_currentGLProgram->getPlainStitchSlot(), ((_currentDisplayMode & PanoramaDisplayModePlainStitch) ? 1 : 0));
     glUniform1i(_currentGLProgram->getLittlePlanetSlot(), ((_currentDisplayMode & PanoramaDisplayModeLittlePlanet) ? 1 : 0));
-    glUniform1i(_currentGLProgram->getSeparateSourceTexturesSlot(), 0);
+    glUniform1i(_currentGLProgram->getSeparateSourceTexturesSlot(), _separateSourceTexture ? 1 : 0);
     glUniform1i(_currentGLProgram->getAntiAliasSlot(), 0);
-    
+
     glUniform1i(_currentGLProgram->getFlipXSlot(), 0);
     glUniform1i(_currentGLProgram->getFlipYSlot(), 0);
-    
+
     if (_isYUVColorSpace)
     {
         GLint yTextureSlot = _currentGLProgram->getLeftYTextureSlot();
@@ -652,7 +653,7 @@ void MadvGLRenderer::setGLProgramVariables(GLint x, GLint y, GLint width, GLint 
             glBindTexture(GL_TEXTURE_2D, _yuvTextures[i]);
             glUniform1i(yuvTextureSlots[i], i);
         }
-        
+
         if (_currentGLProgram->getRightYTextureSlot() >= 0)
         {
             glUniform1i(_currentGLProgram->getRightYTextureSlot(), 0);
@@ -663,15 +664,17 @@ void MadvGLRenderer::setGLProgramVariables(GLint x, GLint y, GLint width, GLint 
     else
     {
         glUniform1i(_currentGLProgram->getLeftTextureSlot(), 0);
-        glBindTexture(GL_TEXTURE_2D, _textureL);
+        glBindTexture(_srcTextureTarget, _srcTextureL);
         glActiveTexture(GL_TEXTURE0);
-        
+
         if (_currentGLProgram->getRightTextureSlot() >= 0)
         {
-            glUniform1i(_currentGLProgram->getRightTextureSlot(), 0);
+            glUniform1i(_currentGLProgram->getRightTextureSlot(), 1);
+            glBindTexture(_srcTextureTarget, _srcTextureR);
+            glActiveTexture(GL_TEXTURE1);
         }
     }
-    
+
     //#ifdef SPHERE_RENDERING
     if (!(_currentDisplayMode & PanoramaDisplayModeSphere) && !(_currentDisplayMode & PanoramaDisplayModeLittlePlanet))
     {
@@ -685,7 +688,7 @@ void MadvGLRenderer::setGLProgramVariables(GLint x, GLint y, GLint width, GLint 
         _glCamera->setHeight(height);
         _glCamera->setProjectionMatrix(_currentGLProgram->getProjectionMatrixSlot());
     }
-    
+
     kmMat4 modelView;
     kmMat4Identity(&modelView);
 #ifdef EXPAND_AS_PLANE
@@ -694,12 +697,12 @@ void MadvGLRenderer::setGLProgramVariables(GLint x, GLint y, GLint width, GLint 
     kmMat4TranslationBy(&modelView, 0, 0, Z_SHIFT);
 #endif
     glUniformMatrix4fv(_currentGLProgram->getModelMatrixSlot(), 1, 0, modelView.mat);
-    
+
     if (_currentDisplayMode & PanoramaDisplayModeLittlePlanet)
     {
         _glCamera->setEulerAngles(_glCamera->getPitchRadius(), _glCamera->getYawRadius(), _glCamera->getBankRadius());
     }
-    
+
     if (!(_currentDisplayMode & PanoramaDisplayModeSphere) && !(_currentDisplayMode & PanoramaDisplayModeLittlePlanet))
     {
         kmMat4 cameraMatrix;
@@ -715,32 +718,32 @@ void MadvGLRenderer::setGLProgramVariables(GLint x, GLint y, GLint width, GLint 
     //    glUniformMatrix4fv(_uniProjectionMat, 1, 0, identityMatrix.glMatrix);
     //    glUniformMatrix4fv(_uniModelMat, 1, 0, identityMatrix.glMatrix);
     //#endif
-    
-//    GLint uni_lLUT_x = _currentGLProgram->getLxLUTSlot();
-//    GLint uni_lLUT_y = _currentGLProgram->getLyLUTSlot();
-//    GLint uni_rLUT_x = _currentGLProgram->getRxLUTSlot();
-//    GLint uni_rLUT_y = _currentGLProgram->getRyLUTSlot();
-//    GLint uniLUTs[4] = {uni_lLUT_x, uni_lLUT_y, uni_rLUT_x, uni_rLUT_y};
-//    GLuint texLUTs[4] = {_LXTexture, _LYTexture, _RXTexture, _RYTexture};
-//    for (int i=0; i<4; i++)
-//    {
-//        glActiveTexture(GL_TEXTURE3 + i);
-//        glBindTexture(GL_TEXTURE_2D, texLUTs[i]);
-//        glUniform1i(uniLUTs[i], 3 + i);
-//    }
-    
+
+    //    GLint uni_lLUT_x = _currentGLProgram->getLxLUTSlot();
+    //    GLint uni_lLUT_y = _currentGLProgram->getLyLUTSlot();
+    //    GLint uni_rLUT_x = _currentGLProgram->getRxLUTSlot();
+    //    GLint uni_rLUT_y = _currentGLProgram->getRyLUTSlot();
+    //    GLint uniLUTs[4] = {uni_lLUT_x, uni_lLUT_y, uni_rLUT_x, uni_rLUT_y};
+    //    GLuint texLUTs[4] = {_LXTexture, _LYTexture, _RXTexture, _RYTexture};
+    //    for (int i=0; i<4; i++)
+    //    {
+    //        glActiveTexture(GL_TEXTURE3 + i);
+    //        glBindTexture(GL_TEXTURE_2D, texLUTs[i]);
+    //        glUniform1i(uniLUTs[i], 3 + i);
+    //    }
+
     GLint uni_dstSize = _currentGLProgram->getDstSizeSlot();
     GLint uni_srcSizeL = _currentGLProgram->getLeftSrcSizeSlot();
     GLint uni_srcSizeR = _currentGLProgram->getRightSrcSizeSlot();
     glUniform2f(uni_dstSize, _lutDstSize.width, _lutDstSize.height);
-    glUniform2f(uni_srcSizeL, _lutSrcSize.width, _lutSrcSize.height);
-    glUniform2f(uni_srcSizeR, _lutSrcSize.width, _lutSrcSize.height);
-    
+    glUniform2f(uni_srcSizeL, _lutSrcSizeL.width, _lutSrcSizeL.height);
+    glUniform2f(uni_srcSizeR, _lutSrcSizeR.width, _lutSrcSizeR.height);
+
     GLfloat scale = CLIP_Z_NEAR*CLIP_Z_NEAR / getFocalLength();
     glUniform1f(_currentGLProgram->getScaleSlot(), scale);
     GLfloat aspect = (GLfloat)width / (GLfloat)height;
     glUniform1f(_currentGLProgram->getAspectSlot(), 1.f / aspect);
-    
+
     if (Vec2fEqualToPoint(Vec2fZero, _touchPoint))
     {
         glUniform2f(_currentGLProgram->getTouchTexcoordSlot(), -0.5, -0.5);
@@ -770,7 +773,7 @@ void MadvGLRenderer::prepareVAO() {
 }
 
 void MadvGLRenderer::drawPrimitives() {
-//    Mesh3DDrawVAO(_pCurrentMesh, _currentGLProgram->getPositionSlot(), _currentGLProgram->getColorSlot(), _currentGLProgram->getTexcoordSlot());
+    //    Mesh3DDrawVAO(_pCurrentMesh, _currentGLProgram->getPositionSlot(), _currentGLProgram->getColorSlot(), _currentGLProgram->getTexcoordSlot());
     Mesh3DDrawMadvSphere(_pCurrentMesh, _currentGLProgram->getPositionSlot(), _currentGLProgram->getLeftTexcoordSlot(), _currentGLProgram->getRightTexcoordSlot(), _currentGLProgram->getTexcoordSlot());
 }
 
@@ -789,7 +792,7 @@ void MadvGLRenderer::draw(GLint x, GLint y, GLint width, GLint height) {
         else
             _pCurrentMesh = &_quadMesh;
     }
-    
+
     bool shouldUpdateTexture = false;
     void* currentRenderSource = NULL;
     pthread_mutex_lock(&_mutex);
@@ -806,22 +809,22 @@ void MadvGLRenderer::draw(GLint x, GLint y, GLint width, GLint height) {
     {
         prepareTextureWithRenderSource(currentRenderSource);
     }
-    
+
     prepareGLCanvas(x,y, width,height);
-    
-//    if (!_LXTexture)
-//    {
-//        prepareLUTTextures();
-//    }
-    
+
+    //    if (!_LXTexture)
+    //    {
+    //        prepareLUTTextures();
+    //    }
+
     prepareGLPrograms();
-    
+
     prepareVAO();
-    
+
     setGLProgramVariables(x,y, width,height);
-    
+
     drawPrimitives();
-    
+
 #ifdef USE_MSAA
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER_APPLE, _framebuffer);
     glBindFramebuffer(GL_READ_FRAMEBUFFER_APPLE, _msaaFramebuffer);

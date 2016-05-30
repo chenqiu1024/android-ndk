@@ -21,6 +21,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.WindowManager;
 
+import com.android.madv.glrenderer.MadvGLRenderer;
+
 import java.io.File;
 
 public class GLES3JNIActivity extends Activity {
@@ -29,6 +31,8 @@ public class GLES3JNIActivity extends Activity {
 
     @Override protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+        MadvGLRenderer renderer = new MadvGLRenderer("something");
+
         mView = new GLES3JNIView(getApplication());
         setContentView(mView);
     }
