@@ -145,7 +145,7 @@ static uint16_t  palette[PALETTE_SIZE];
 static uint16_t  make565(int red, int green, int blue)
 {
     return (uint16_t)( ((red   << 8) & 0xf800) |
-                       ((green << 2) & 0x03e0) |
+                       ((green << 3) & 0x07e0) |
                        ((blue  >> 3) & 0x001f) );
 }
 
@@ -427,15 +427,26 @@ static int32_t engine_handle_input(struct android_app* app, AInputEvent* event) 
 }
 
 static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
+    static int32_t format = WINDOW_FORMAT_RGB_565;
     struct engine* engine = (struct engine*)app->userData;
     switch (cmd) {
         case APP_CMD_INIT_WINDOW:
             if (engine->app->window != NULL) {
+                // fill_plasma() assumes 565 format, get it here
+                format = ANativeWindow_getFormat(app->window);
+                ANativeWindow_setBuffersGeometry(app->window,
+                              ANativeWindow_getWidth(app->window),
+                              ANativeWindow_getHeight(app->window),
+                              WINDOW_FORMAT_RGB_565);
                 engine_draw_frame(engine);
             }
             break;
         case APP_CMD_TERM_WINDOW:
             engine_term_display(engine);
+            ANativeWindow_setBuffersGeometry(app->window,
+                          ANativeWindow_getWidth(app->window),
+                          ANativeWindow_getHeight(app->window),
+                          format);
             break;
         case APP_CMD_LOST_FOCUS:
             engine->animating = 0;

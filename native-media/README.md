@@ -3,7 +3,7 @@ Native Media
 Native Media is an Android sample that uses OpenMAX AL to play a video.
 
 Note: This sample requires an MPEG-2 Transport Stream file to be
-placed in /sdcard/NativeMedia.ts and encoded as:
+placed in app/src/main/assets/clips/NativeMedia.ts and encoded as:
 ```
   video: H.264 baseline profile
   audio: AAC LC stereo
@@ -30,6 +30,11 @@ Getting Started
 Screenshots
 -----------
 ![screenshot](screenshot.png)
+
+
+Known Issues
+------------
+- Android-N preoview: native player path is not working, under debug now
 
 Support
 -------
