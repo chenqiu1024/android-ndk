@@ -17,7 +17,8 @@ model {
         cppFlags   += "-fno-rtti"
         cppFlags   += "-fno-exceptions"
         cppFlags   += "-std=gnu++11"
-        CFlags     += ["-Werror", "-Ikazmath/include/kazmath/"]
+        CFlags     += ["-Werror"]
+        CFlags     += "-I" + file("src/main/jni/kazmath/include/kazmath").absolutePath
         ldLibs     += ["log","GLESv3", "EGL"]
         stl         = "stlport_static"
     }

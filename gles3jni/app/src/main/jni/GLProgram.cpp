@@ -15,7 +15,7 @@ GLProgram::~GLProgram() {
     glDeleteProgram(_program);
 }
 
-GLProgram::GLProgram(const GLchar* __nullable const* __nullable vertexSources, int vertexSourcesCount, const GLchar* __nullable const* __nullable fragmentSources, int fragmentSourcesCount) {
+GLProgram::GLProgram(const GLchar* const* vertexSources, int vertexSourcesCount, const GLchar* const* fragmentSources, int fragmentSourcesCount) {
     _program = compileAndLinkShaderProgramWithShaderPointers(vertexSources, vertexSourcesCount, fragmentSources, fragmentSourcesCount, &_vertexShader, &_fragmentShader);
     _positionSlot = glGetAttribLocation(_program, "a_position");
     _colorSlot = glGetAttribLocation(_program, "a_color");

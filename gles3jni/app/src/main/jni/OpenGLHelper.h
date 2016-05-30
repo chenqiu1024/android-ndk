@@ -9,8 +9,8 @@
 #ifndef OpenGLHelper_h
 #define OpenGLHelper_h
 
-#include <OpenGLES/ES2/gl.h>
-#include <OpenGLES/ES2/glext.h>
+#include "gles2.h"
+#include "gles2ext.h"
 
 #define CHECK_GL_ERROR() \
 do { \

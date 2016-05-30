@@ -18,7 +18,8 @@ model {
         cppFlags   += "-fno-exceptions"
         cppFlags   += "-DDYNAMIC_ES3"
         cppFlags   += "-std=gnu++11"
-        CFlags     += ["-Werror", "-DDYNAMIC_ES3", "-Ikazmath/include/kazmath/"]
+        CFlags     += ["-Werror", "-DDYNAMIC_ES3"]
+        CFlags     += "-I" + file("src/main/jni/kazmath/include/kazmath").absolutePath
         ldLibs     += ["log","GLESv2", "EGL"]
         stl         = "stlport_static"
     }

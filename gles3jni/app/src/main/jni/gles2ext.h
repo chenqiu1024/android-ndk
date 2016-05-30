@@ -5,10 +5,11 @@
 #ifndef GLES3JNI_GLES2EXT_H
 #define GLES3JNI_GLES2EXT_H
 
-#include <TargetConditionals.h>
+#include "TargetConditionals.h"
 
 #ifdef TARGET_PLATFORM_LINUX
-#include <GLES2/gl2.h>
+#define GL_GLEXT_PROTOTYPES
+#include <GLES2/gl2ext.h>
 #elif TARGET_PLATFORM_IOS
 #include <OpenGLES/ES2/glext.h>
 #endif

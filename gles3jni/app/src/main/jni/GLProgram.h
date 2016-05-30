@@ -14,7 +14,7 @@ public:
     
     virtual ~GLProgram();
     
-    GLProgram(const GLchar* __nullable const* __nullable vertexSources, int vertexSourcesCount, const GLchar* __nullable const* __nullable fragmentSources, int fragmentSourcesCount);
+    GLProgram(const GLchar* const* vertexSources, int vertexSourcesCount, const GLchar* const* fragmentSources, int fragmentSourcesCount);
     
     inline GLuint getProgram() {return _program;}
     

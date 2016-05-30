@@ -162,7 +162,7 @@ void Renderer::calcSceneParams(unsigned int w, unsigned int h,
     const float aspect[2] = {dim[0] / dim[1], dim[1] / dim[0]};
     const float scene2clip[2] = {1.0f, aspect[0]};
     const int ncells[2] = {
-            NCELLS_MAJOR,
+            (const int) NCELLS_MAJOR,
             (int)floorf(NCELLS_MAJOR * aspect[1])
     };
 
