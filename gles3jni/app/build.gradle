@@ -15,8 +15,9 @@ model {
         moduleName  = "gles3jni"
         cppFlags.addAll(["-Werror", "-fno-rtti", "-fno-exceptions", "-std=gnu++11"])
         cppFlags.add("-I" + file("src/main/jni/kazmath/include/kazmath").absolutePath)
-	    CFlags.addAll(["-Werror"])
-        ldLibs.addAll(["log","GLESv3", "EGL"])
+        CFlags.add("-I" + file("src/main/jni/libpng").absolutePath)
+        CFlags.addAll(["-Werror"])
+        ldLibs.addAll(["log","GLESv3", "EGL", "z"])
         stl         = "stlport_static"
     }
     android.buildTypes {

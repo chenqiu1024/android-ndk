@@ -18,7 +18,8 @@ model {
             cppFlags.addAll(['-std=c++11', '-Wall', '-fno-rtti', '-fno-exceptions'])
             CFlags.addAll(['-Wall'])
             CFlags.add("-I" + file("src/main/jni/kazmath/include/kazmath").absolutePath)
-            ldLibs.addAll(['log','GLESv3', 'EGL', 'pthread'])
+            CFlags.add("-I" + file("src/main/jni/libpng").absolutePath)
+            ldLibs.addAll(['log','GLESv3', 'EGL', 'pthread', 'z'])
         }
         buildTypes {
             release {

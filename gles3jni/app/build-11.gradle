@@ -20,7 +20,8 @@ model {
                              '-DDYNAMIC_ES3' ])
             CFlags.addAll(['-Wall', '-DDYNAMIC_ES3'])
             CFlags.add("-I" + file("src/main/jni/kazmath/include/kazmath").absolutePath)
-            ldLibs.addAll(['log','GLESv2', 'EGL', 'pthread'])
+            CFlags.add("-I" + file("src/main/jni/libpng").absolutePath)
+            ldLibs.addAll(['log','GLESv2', 'EGL', 'pthread', "z"])
         }
         buildTypes {
             release {

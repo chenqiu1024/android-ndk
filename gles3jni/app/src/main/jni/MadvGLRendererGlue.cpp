@@ -9,6 +9,7 @@ JNIEXPORT jlong JNICALL Java_com_android_madv_glrenderer_MadvGLRenderer_createNa
     jboolean copied = false;
     const char* cstrLUTPath = env->GetStringUTFChars(lutPath, &copied);
     ALOGE("LUT Path : isCopy = %d, %s", copied, cstrLUTPath);
+
     env->ReleaseStringUTFChars(lutPath, cstrLUTPath);
     return 0;
 }
