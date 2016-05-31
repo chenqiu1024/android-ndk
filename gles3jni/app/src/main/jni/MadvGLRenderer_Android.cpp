@@ -3,6 +3,7 @@
 //
 
 #include "MadvGLRenderer_Android.h"
+#include "Log.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include "libpng/png.h"
@@ -70,6 +71,8 @@ int decodePNG(char *filepath, pic_data *out)
 
     size = out->width * out->height; /* 计算图片的总像素点数量 */
 
+    ALOGE("channels = %d, bits = %d, withAlpha = %d, width = %d, height = %d, colorType = %d\n", channels, out->bit_depth, out->flag, out->width, out->height, color_type);
+
     if(channels == 4 || color_type == PNG_COLOR_TYPE_RGB_ALPHA)
     {/*如果是RGB+alpha通道，或者RGB+其它字节*/
         size *= (4*sizeof(unsigned char)); /* 每个像素点占4个字节内存 */
@@ -119,7 +122,27 @@ int decodePNG(char *filepath, pic_data *out)
             }
         }
     }
-    else return 1;
+    else if (channels == 1 || color_type == PNG_COLOR_TYPE_GRAY)
+    {
+        size *= (2*sizeof(unsigned char)); /* 每个像素点占3个字节内存 */
+        out->flag = NO_ALPHA;
+        out->rgba = (unsigned char**) malloc(size);
+        if(out->rgba == NULL)
+        {/* 如果分配内存失败 */
+            fclose(pic_fp);
+            puts("错误(png):无法分配足够的内存供存储数据!");
+            return 1;
+        }
+
+        unsigned char* pDst = (unsigned char*) out->rgba;
+        for(i = 0; i < out->height; i++)
+        {
+            memcpy(pDst, row_pointers[i], out->width * 2);
+            pDst += (out->width * 2);
+        }
+    }
+    else
+        return 1;
 
     /* 撤销数据占用的内存 */
     png_destroy_read_struct(&png_ptr, &info_ptr, 0);
@@ -136,9 +159,40 @@ MadvGLRenderer_Android::MadvGLRenderer_Android(const char* lutPath)
 }
 
 void MadvGLRenderer_Android::prepareLUT(const char* lutPath) {
+    pic_data lutDatas[8];
+    const char* LUTFilePathPattern[] = {"%s/L_x_int.png", "%s/L_x_min.png", "%s/L_y_int.png", "%s/L_y_min.png", "%s/R_x_int.png", "%s/R_x_min.png", "%s/R_y_int.png", "%s/R_y_min.png"};
 
-//    setLUTData(CGSize2Vec2f(imgLXI.size), Vec2f{3456.f, 1728.f}, Vec2f{3456.f, 1728.f}, (int)sizeInShort, LXIData, LXMData, LYIData, LYMData, RXIData, RXMData, RYIData, RYMData);
+    char* lutFilePath = (char*) malloc(strlen(lutPath) + strlen("/L_x_int.png") + 1);
+    for (int i=0; i<8; ++i)
+    {
+        sprintf(lutFilePath, LUTFilePathPattern[i], lutPath);
+        int result = decodePNG((char*)lutFilePath, lutDatas + i);
+        ALOGE("lutFilePath = %s, result = %d\n", lutFilePath, result);
 
+        ///!!!For Debug
+        unsigned short* pShort = (unsigned short*) lutDatas[i].rgba;
+        unsigned short min = 10240, max = 0;
+        int length = lutDatas[i].width * lutDatas[i].height;
+        for (int j=length; j>0; --j)
+        {
+            unsigned short s = *pShort;
+            s = ((s << 8) & 0xff00) | ((s >> 8) & 0x00ff);
+            *pShort++ = s;
+
+            if (s > max) max = s;
+            if (s < min) min = s;
+        }
+        ALOGE("min = %d, max = %d", min, max);
+    }
+
+    setLUTData(Vec2f{(GLfloat)lutDatas[0].width, (GLfloat)lutDatas[0].height}, Vec2f{3456.f, 1728.f}, Vec2f{3456.f, 1728.f}, lutDatas[0].width * lutDatas[0].height,
+               (unsigned short*)lutDatas[0].rgba, (unsigned short*)lutDatas[1].rgba, (unsigned short*)lutDatas[2].rgba, (unsigned short*)lutDatas[3].rgba, (unsigned short*)lutDatas[4].rgba, (unsigned short*)lutDatas[5].rgba, (unsigned short*)lutDatas[6].rgba, (unsigned short*)lutDatas[7].rgba);
+
+    for (int i=0; i<8; ++i)
+    {
+        free(lutDatas[i].rgba);
+    }
+    free(lutFilePath);
 }
 
 void MadvGLRenderer_Android::prepareTextureWithRenderSource(void* renderSource) {
