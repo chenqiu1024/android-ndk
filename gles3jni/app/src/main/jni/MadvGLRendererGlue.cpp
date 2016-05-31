@@ -2,7 +2,7 @@
 // Created by QiuDong on 16/5/30.
 //
 #include "MadvGLRendererGlue.h"
-#include "MadvGLRenderer.h"
+#include "MadvGLRenderer_Android.h"
 
 JNIEXPORT jlong JNICALL Java_com_android_madv_glrenderer_MadvGLRenderer_createNativeGLRenderer
         (JNIEnv* env, jobject self, jstring lutPath) {
@@ -10,8 +10,11 @@ JNIEXPORT jlong JNICALL Java_com_android_madv_glrenderer_MadvGLRenderer_createNa
     const char* cstrLUTPath = env->GetStringUTFChars(lutPath, &copied);
     ALOGE("LUT Path : isCopy = %d, %s", copied, cstrLUTPath);
 
+    MadvGLRenderer_Android* glRenerer = new MadvGLRenderer_Android(cstrLUTPath);
+
     env->ReleaseStringUTFChars(lutPath, cstrLUTPath);
-    return 0;
+
+    return (long)(void*)glRenerer;
 }
 
 JNIEXPORT void JNICALL Java_com_android_madv_glrenderer_MadvGLRenderer_releaseNativeGLRenderer
